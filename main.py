@@ -19,6 +19,7 @@ from aiogram.filters import CommandObject, CommandStart
 from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup,
                            Message, Update, WebAppInfo)
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -522,5 +523,7 @@ async def demo_friend(auth=Depends(auth_dep), s=Depends(db)):
 
 
 # Frontend (static/index.html) ni shu serverning o'zidan beramiz. ALOHIDA marshrutlardan KEYIN ulanadi.
-if os.path.isdir("static"):
-    app.mount("/", StaticFiles(directory="static", html=True), name="static")
+@app.get("/")
+async def serve_index():
+    return FileResponse("index.html")
+  
