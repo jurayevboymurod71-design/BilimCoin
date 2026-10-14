@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>BilimCoin</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e0922;--card:#1a1240;--card2:#241a5a;--line:#3a2d86;--lime:#b8ff3d;--amber:#ffc53d;--cyan:#5ee7ff;--red:#ff4d6d;--txt:#f2eeff;--mut:#9c93d1}
+*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--txt);font-family:'Manrope',system-ui,sans-serif;overflow:hidden}
+.disp{font-family:'Unbounded','Manrope',system-ui,sans-serif}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(520px 320px at 85% -5%,#5b2bd655,transparent),radial-gradient(420px 300px at -10% 40%,#1fd1ff22,transparent);pointer-events:none}
+#app{position:relative;height:100%;display:flex;flex-direction:column;max-width:480px;margin:0 auto;padding-top:env(safe-area-inset-top,0px)}
+main{flex:1;overflow-y:auto;padding:12px 16px 96px}
+.card{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:20px;padding:14px}
+.pill{display:flex;align-items:center;gap:8px;background:#150e36;border:1px solid var(--line);border-radius:999px;padding:7px 14px 7px 8px}
+.coin{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800;color:#3b2a00;background:radial-gradient(circle at 30% 30%,#fff3b0,var(--amber) 60%,#c98a00);box-shadow:0 0 14px #ffc53d88}
+.gem{width:28px;height:28px;display:grid;place-items:center;font-size:18px;filter:drop-shadow(0 0 8px var(--cyan))}
+.opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px;border-radius:16px;background:var(--card);border:1.5px solid var(--line);color:var(--txt);font-weight:700;font-size:16px;transition:transform .12s,background .2s,border-color .2s}
+.opt:active:not(:disabled){transform:scale(.97)}
+.opt b{flex:none;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#2c2170;color:var(--amber);font-family:Unbounded}
+.opt.ok{background:#16461f;border-color:var(--lime);box-shadow:0 0 22px #b8ff3d66;animation:pop .35s}
+.opt.bad{background:#4a1224;border-color:var(--red);box-shadow:0 0 22px #ff4d6d66;animation:shake .4s}
+.opt.hint{border-color:var(--lime);box-shadow:0 0 16px #b8ff3d55;animation:pulse 1s infinite}
+.opt.gone{opacity:.15;pointer-events:none;transform:scale(.96)}
+@keyframes pop{50%{transform:scale(1.04)}}
+@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+@keyframes pulse{50%{box-shadow:0 0 4px #b8ff3d33}}
+@keyframes floatup{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-60px)}}
+.float{position:fixed;font-family:Unbounded;font-weight:800;color:var(--lime);text-shadow:0 0 12px #b8ff3d;pointer-events:none;animation:floatup .9s forwards;z-index:60}
+.boost{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:16px;background:#150e36;border:1px solid var(--line);color:var(--txt);font-size:12px;font-weight:700}
+.boost .pr{font-family:Unbounded;font-size:11px;color:var(--cyan)}
+.boost:disabled{opacity:.35}
+.boost:active{transform:scale(.95)}
+.btn{display:block;width:100%;padding:14px;border-radius:16px;border:0;font-weight:800;font-size:15px;color:#1c2b00;background:linear-gradient(180deg,#d6ff7a,var(--lime));box-shadow:0 6px 0 #6fa30c,0 10px 24px #b8ff3d33;transition:transform .1s,box-shadow .1s}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #6fa30c}
+.btn.sec{color:var(--txt);background:var(--card2);box-shadow:0 5px 0 #130c33;border:1px solid var(--line)}
+.btn:disabled{filter:grayscale(1) brightness(.6);box-shadow:none}
+nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;display:flex;gap:4px;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:#0e0922ee;backdrop-filter:blur(14px);border-top:1px solid var(--line);z-index:30}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border:0;background:none;color:var(--mut);font-size:11px;font-weight:700;border-radius:14px;transition:.2s}
+nav button span{font-size:22px;transition:transform .2s}
+nav button.on{color:var(--lime);background:#241a5a}
+nav button.on span{transform:translateY(-2px) scale(1.15)}
+.tab{display:none}.tab.on{display:block}
+.bar{height:10px;border-radius:99px;background:#150e36;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--lime));border-radius:99px;transition:width .4s}
+.modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:#05030fd9;backdrop-filter:blur(6px);padding:20px}
+.modal.on{display:flex}
+.toast{position:fixed;left:50%;top:70px;transform:translate(-50%,-20px);opacity:0;background:var(--card2);border:1px solid var(--lime);padding:10px 16px;border-radius:14px;font-weight:700;font-size:14px;z-index:70;transition:.3s;max-width:90%;text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+input{width:100%;padding:13px;border-radius:14px;border:1.5px solid var(--line);background:#150e36;color:var(--txt);font-size:16px;font-family:Manrope;font-weight:600;outline:none}
+input:focus{border-color:var(--lime)}
+.task{display:flex;align-items:center;gap:12px}
+.task .ic{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:22px;background:#150e36;flex:none}
+.task .btn{width:auto;padding:9px 14px;font-size:13px;box-shadow:0 4px 0 #6fa30c;flex:none}
+button.card{color:var(--txt);font-family:inherit;text-align:left;transition:transform .12s,border-color .2s}
+button.card:active{transform:scale(.96);border-color:var(--lime)}
+.chip{padding:9px 14px;border-radius:999px;background:var(--card2);border:1px solid var(--line);color:var(--txt);font-weight:700;font-size:13px}
+.chip:active{transform:scale(.95)}
+#opts .opt{padding:12px;font-size:15px;min-height:68px;line-height:1.2}
+.opt span{min-width:0;overflow-wrap:anywhere}
+#qring{transition:none}
+nav.locked button:not(.on){opacity:.35}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="px-4 pt-3 flex items-center gap-2">
+    <div class="pill flex-1"><div class="coin">so'm</div><div><div class="text-[10px] text-[var(--mut)] leading-none">Balans</div><div id="som" class="disp font-bold text-[15px] leading-tight">0</div></div></div>
+    <button id="gemPill" class="pill" onclick="go('earn')"><div class="gem">💎</div><div id="gem" class="disp font-bold text-[15px]">0</div><span class="text-[var(--lime)] font-extrabold">+</span></button>
+  </header>
+
+  <main>
+    <!-- O'YIN -->
+    <section id="t-game" class="tab on">
+      <div id="pick">
+        <h2 class="disp text-lg font-bold mt-2 mb-1">Fanni tanlang</h2>
+        <p class="text-sm text-[var(--mut)] mb-3">Tanlangan fandan test boshlanadi.</p>
+        <div class="card mb-4 text-sm">
+          <div>Hozirgi savol: <b id="tierN" class="text-[var(--lime)]"></b> · Mukofot: <b id="tierR" class="text-[var(--amber)]"></b></div>
+          <div class="text-xs text-[var(--mut)] mt-1">1–20-savol: 10 so'm · 21–100-savol: 20 so'm · 100 dan keyin: 30 so'm (oshmaydi)</div>
+        </div>
+        <div id="subs" class="grid grid-cols-2 gap-3"></div>
+        <div class="text-xs text-[var(--mut)] mt-5 mb-2 font-bold">Boshqa fanlar</div>
+        <div id="subs2" class="flex flex-wrap gap-2"></div>
+      </div>
+      <div id="play" style="display:none">
+      <div id="qwrap">
+      <div class="mt-1 mb-2"><div id="meta" class="font-extrabold text-[15px]"></div><div id="meta2" class="text-xs text-[var(--mut)]"></div></div>
+      <div id="qring" class="mb-4" style="padding:8px;border-radius:30px;background:#b8ff3d">
+        <div class="card" style="border-radius:22px;border:0;min-height:150px">
+          <div class="flex justify-between text-[11px] text-[var(--mut)] font-bold"><span>VAQT: <b id="time" class="disp" style="color:#b8ff3d">15</b></span><span>To'g'ri javob: <span id="rw" class="text-[var(--lime)] font-extrabold">+10 so'm</span></span></div>
+          <div id="q" class="text-[20px] font-extrabold leading-snug text-center py-5"></div>
+        </div>
+      </div>
+      <div id="opts" class="grid grid-cols-2 gap-2.5"></div>
+      <div class="text-xs text-[var(--mut)] mt-5 mb-2 font-bold">Yordamchilar</div>
+      <div class="flex gap-2">
+        <button class="boost" id="b-fifty" onclick="useBoost('fifty')"><span class="text-xl">✂️</span>50/50<span class="pr"></span></button>
+        <button class="boost" id="b-time" onclick="useBoost('time')"><span class="text-xl">⏱</span>+5 soniya<span class="pr"></span></button>
+        <button class="boost" id="b-show" onclick="useBoost('show')"><span class="text-xl">🎯</span>Javobni ko'rsat<span class="pr"></span></button>
+      </div>
+      </div>
+      <div id="result" style="display:none" class="text-center pt-8">
+        <div id="rIcon" class="text-7xl mb-2"></div>
+        <div id="rMsg" class="disp text-xl font-extrabold mb-1"></div>
+        <div id="rSub" class="text-sm text-[var(--amber)] font-bold"></div>
+        <div id="rSess" class="card my-6 text-sm"></div>
+        <div class="grid gap-3"><button class="btn" onclick="nextStep()">Davom etish</button><button class="btn sec" onclick="finish()">Tugatish</button></div>
+      </div>
+    </section>
+
+    <!-- OLMOS -->
+    <section id="t-earn" class="tab">
+      <h2 class="disp text-lg font-bold mt-2 mb-1">Olmos ishlash</h2>
+      <p class="text-sm text-[var(--mut)] mb-4">Olmos yordamchilarga ketadi. Vazifalarni bajaring.</p>
+      <div class="grid gap-3" id="tasks"></div>
+    </section>
+
+    <!-- REFERAL -->
+    <section id="t-ref" class="tab">
+      <h2 class="disp text-lg font-bold mt-2 mb-1">Do'stlarni taklif qiling</h2>
+      <p class="text-sm text-[var(--mut)] mb-4">Har bir do'st uchun <b class="text-[var(--cyan)]">💎 2 olmos</b> olasiz.</p>
+      <div class="card mb-3 text-center">
+        <div class="text-xs text-[var(--mut)]">Taklif qilingan do'stlar</div>
+        <div id="friends" class="disp text-5xl font-extrabold text-[var(--lime)] my-1">0</div>
+      </div>
+      <div class="card mb-3">
+        <div class="text-xs text-[var(--mut)] mb-2">Sizning havolangiz</div>
+        <input id="link" readonly>
+        <div class="grid grid-cols-2 gap-3 mt-3">
+          <button class="btn sec" onclick="copyLink()">Nusxalash</button>
+          <button class="btn" onclick="shareLink()">Ulashish</button>
+        </div>
+      </div>
+      <button id="demoBtn" class="btn sec" onclick="demoFriend()" style="font-size:12px;padding:10px;display:none">Demo: do'st qo'shildi +2 💎 (test)</button>
+    </section>
+
+    <!-- HAMYON -->
+    <section id="t-wallet" class="tab">
+      <h2 class="disp text-lg font-bold mt-2 mb-3">Hamyon</h2>
+      <div class="card mb-3 text-center">
+        <div class="text-xs text-[var(--mut)]">Mavjud balans</div>
+        <div id="wSom" class="disp text-3xl font-extrabold text-[var(--amber)] my-1">0 so'm</div>
+      </div>
+      <div class="card mb-3 grid gap-3">
+        <div class="text-sm font-extrabold">Pul chiqarish shartlari</div>
+        <div><div class="flex justify-between text-xs mb-1"><span id="c1">Minimal 30 000 so'm</span><span id="p1"></span></div><div class="bar"><i id="bar1"></i></div></div>
+        <div><div class="flex justify-between text-xs mb-1"><span id="c2">Kamida 5 ta do'st</span><span id="p2"></span></div><div class="bar"><i id="bar2"></i></div></div>
+        <div><div class="flex justify-between text-xs mb-1"><span id="c3">5 ta homiy kanalga obuna</span><span id="p3"></span></div><div class="bar"><i id="bar3"></i></div></div>
+        <div id="warn" class="text-xs text-[var(--amber)] font-bold"></div>
+      </div>
+      <div class="card grid gap-3">
+        <input id="card" inputmode="numeric" maxlength="19" placeholder="Karta raqami: 8600 0000 0000 0000">
+        <button id="wbtn" class="btn" onclick="withdraw()">Pul chiqarish so'rovi</button>
+      </div>
+    </section>
+  </main>
+
+  <nav>
+    <button data-t="game" class="on" onclick="go('game')"><span>🎮</span>O'yin</button>
+    <button data-t="earn" onclick="go('earn')"><span>💎</span>Olmos</button>
+    <button data-t="ref" onclick="go('ref')"><span>👥</span>Referal</button>
+    <button data-t="wallet" onclick="go('wallet')"><span>💳</span>Hamyon</button>
+  </nav>
+</div>
+
+<!-- REKLAMA MODALI -->
+<div id="ad" class="modal">
+  <div class="card w-full text-center" style="border-color:var(--amber)">
+    <div class="text-[11px] text-[var(--mut)]" id="adTag">Reklama</div>
+    <div class="my-4 h-40 rounded-2xl grid place-items-center" style="background:repeating-linear-gradient(45deg,#241a5a,#241a5a 12px,#2c2170 12px,#2c2170 24px)">
+      <div class="px-3"><div class="text-4xl">📺</div><div id="adTitle" class="font-extrabold mt-1"></div><div id="adText" class="text-xs text-[var(--mut)] mt-1"></div><button id="adLink" class="chip mt-2" style="display:none"></button></div>
+    </div>
+    <div class="bar mb-3"><i id="adBar" style="width:0"></i></div>
+    <div id="adTxt" class="font-extrabold mb-3"></div>
+    <button id="adClose" class="btn" style="display:none" onclick="closeAd()">Yopish</button>
+  </div>
+</div>
+
+<!-- OLMOS YETMADI -->
+<div id="need" class="modal">
+  <div class="card w-full text-center">
+    <div class="text-4xl mb-2">💎</div>
+    <div class="font-extrabold text-lg mb-1">Olmos yetarli emas</div>
+    <div class="text-sm text-[var(--mut)] mb-4">Reklama ko'rib 2 olmos oling.</div>
+    <button class="btn mb-3" onclick="hide('need');showAd('reward')">Reklama ko'rish (+2 💎)</button>
+    <button class="btn sec" onclick="hide('need')">Bekor qilish</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const tg = window.Telegram && Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); try{tg.setHeaderColor('#0e0922');tg.setBackgroundColor('#0e0922');tg.disableVerticalSwipes&&tg.disableVerticalSwipes();}catch(e){} }
+
+const API = '';                 // frontend backend bilan bir domenda bo'lsa bo'sh qoladi, aks holda 'https://app.onrender.com'
+const CH = [                    // zaxira ro'yxat; asosiysi serverdan (/api/channels) keladi va /admin orqali boshqariladi
+ ['ch1','Sokin Kadrlar','https://t.me/sokinkadirlar'],
+ ['ch2','Asosiy Kanal 1','https://t.me/asosiykanal_1'],
+ ['ch3','Asosiy Kanal 2','https://t.me/asosiykanal_2'],
+ ['ch4','Asosiy Kanal 3','https://t.me/asosiykanal_3'],
+ ['ch5','Asosiy Kanal 4','https://t.me/asosiykanal_4']];
+const MAIN=[['math','➗','Matematika'],['hist','🏛','Tarix'],['ona','📖','Ona tili'],['rus','🇷🇺','Rus tili'],['eng','🇬🇧','Ingliz tili'],['adab','✒️','Adabiyot']];
+const EXTRA=[['fiz','⚛️','Fizika'],['kim','🧪','Kimyo'],['bio','🧬','Biologiya'],['geo','🌍','Geografiya'],['inf','💻','Informatika'],['astro','🪐','Astronomiya']];
+const NAME=Object.fromEntries([...MAIN,...EXTRA].map(a=>[a[0],a[2]]));
+const L=['A','B','C','D'];
+const levelOf=n=>n<=20?"Oson":n<=100?"O'rta":"Qiyin";
+const rewardOf=n=>n<=20?10:n<=100?20:30;
+const ERR={not_enough_gems:"Olmos yetarli emas",not_subscribed:"Avval kanalga obuna bo'ling",already_claimed:"Allaqachon olingan",invalid_card:"Karta raqami noto'g'ri",min_amount:"Minimal summa 30 000 so'm",need_friends:"Kamida 5 ta do'st kerak",need_channels:"Hamma homiy kanallarga obuna bo'ling",pending_withdrawal_exists:"Avvalgi so'rov ko'rib chiqilmoqda",daily_ad_limit:"Bugungi reklama limiti tugadi",ad_not_finished:"Reklama hali tugamadi",channel_check_failed:"Kanalni tekshirib bo'lmadi, keyinroq urining",insufficient_balance:"Balans yetarli emas",demo_disabled:"Demo o'chirilgan"};
+const errMsg=e=>ERR[e.code]||("Xatolik: "+(e.code||'tarmoq'));
+
+// Holat serverdan keladi (localStorage ishlatilmaydi)
+let S={uid:(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user&&tg.initDataUnsafe.user.id)||0,som:0,gem:0,answered:0,friends:0,costs:{fifty:2,time:2,show:5},chDone:0,chTotal:5,adEvery:10,forced:true,demo:false,sub:null};
+let channels=CH.map(([key,title,url])=>({key,title,url,claimed:false}));
+const pending={};
+let cur=null,left=15,total=15,sess={t:0,ok:0,sum:0},inGame=false,lastT=-1,raf=0,last=0,tick=null,locked=true,paused=false,adCur=null,adTick=null;
+const $=id=>document.getElementById(id);
+const fmt=n=>n.toLocaleString('ru-RU').replace(/\u00a0/g,' ');
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const show=id=>$(id).classList.add('on'), hide=id=>$(id).classList.remove('on');
+const refLink=()=>`https://t.me/Bilim_Coin_bot?startapp=ref_${S.uid}`;
+
+/*MOCK*/
+// Telegramsiz (oddiy brauzer/Acode) ochilganda ishlaydigan LOKAL DEMO rejim. Telegram ichida bu kod ishlatilmaydi.
+const M={som:0,gem:3,answered:0,ref:0,costs:{fifty:2,time:2,show:5},adReq:false,cl:{},q:null,adKind:null};
+const MQ=[["12 × 8 nechaga teng?",["86","96","108","98"],1],["O'zbekiston poytaxti?",["Samarqand","Buxoro","Toshkent","Namangan"],2],["\"Apple\" tarjimasi?",["Anor","Olma","Uzum","Nok"],1],["Suvning formulasi?",["CO₂","H₂O","O₂","NaCl"],1],["Eng katta okean?",["Atlantika","Tinch","Hind","Shimoliy Muz"],1],["1 bayt necha bit?",["4","16","8","2"],2]];
+const mErr=c=>{throw {status:400,code:c}};
+function mProfile(){return {id:1,first_name:'Demo',som:M.som,gem:M.gem,answered:M.answered,referrals:M.ref,costs:{...M.costs},ad_required:M.adReq,channels_done:Object.keys(M.cl).length,channels_total:CH.length,ad_every:10,forced_ads:true,demo:true}}
+async function mockApi(path,b){
+  await new Promise(r=>setTimeout(r,120));
+  const n=M.answered+1;
+  if(path==='/api/user') return mProfile();
+  if(path==='/api/channels') return CH.map(([key,title,url])=>({key,title,url,claimed:!!M.cl[key]}));
+  if(path==='/api/channels/claim'){ if(M.cl[b.channel]) mErr('already_claimed'); M.cl[b.channel]=1; M.gem+=2; return mProfile(); }
+  if(path==='/api/question'){
+    if(M.adReq) mErr('ad_required');
+    const x=MQ[Math.floor(Math.random()*MQ.length)], o=x[1].map((t,i)=>[t,i===x[2]]).sort(()=>Math.random()-.5);
+    M.q={c:o.findIndex(e=>e[1]),used:{}};
+    return {question_id:'m'+Date.now(),subject:b.subject,question:x[0],options:o.map(e=>e[0]),number:n,level:levelOf(n),reward:rewardOf(n),time_limit:15};
+  }
+  if(path==='/api/answer'){
+    const ok=b.choice===M.q.c, rw=ok?rewardOf(n):0; M.som+=rw; M.answered++; if(M.answered%10===0) M.adReq=true;
+    return {correct:ok,correct_index:M.q.c,reward:rw,...mProfile()};
+  }
+  if(path==='/api/boost'){
+    const k=b.boost; if(M.q.used[k]) mErr('boost_already_used'); if(M.gem<M.costs[k]) mErr('not_enough_gems');
+    M.gem-=M.costs[k]; M.costs[k]*=2; M.q.used[k]=1; const r={};
+    if(k==='fifty') r.remove=[0,1,2,3].filter(i=>i!==M.q.c).sort(()=>Math.random()-.5).slice(0,2);
+    else if(k==='time') r.extra_seconds=5; else r.correct_index=M.q.c;
+    return {...r,...mProfile()};
+  }
+  if(path==='/api/ad/start'){ M.adKind=b.kind; return {ad_id:'a'+Date.now(),seconds:15,ad:{title:'Namuna reklama',text:'Bu demo rejim (Telegramsiz)',link:''}}; }
+  if(path==='/api/ad/finish'){ if(M.adKind==='reward') M.gem+=2; else M.adReq=false; return mProfile(); }
+  if(path==='/api/demo/friend'){ M.ref++; M.gem+=2; return mProfile(); }
+  if(path==='/api/withdraw'){ if(M.som<30000) mErr('min_amount'); if(M.ref<5) mErr('need_friends'); if(Object.keys(M.cl).length<CH.length) mErr('need_channels'); M.som=0; return {...mProfile(),message:"So'rovingiz qabul qilindi, 24 soat ichida kartangizga o'tkazib beriladi."}; }
+  mErr('not_found');
+}
+/*ENDMOCK*/
+async function api(path,body){
+  if(!(tg&&tg.initData)) return mockApi(path,body);   // Telegram tashqarisida: lokal demo
+  const r=await fetch(API+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','Authorization':'tma '+(tg?tg.initData:'')},body:body?JSON.stringify(body):undefined});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok) throw {status:r.status,code:typeof d.detail==='string'?d.detail:(d.detail&&d.detail.error)||'error',detail:d.detail};
+  return d;
+}
+function applyProfile(p){
+  S.uid=p.id;S.som=p.som;S.gem=p.gem;S.answered=p.answered;S.friends=p.referrals;S.costs=p.costs;
+  S.adReq=p.ad_required;S.chDone=p.channels_done;S.chTotal=p.channels_total;S.adEvery=p.ad_every;S.forced=p.forced_ads;S.demo=p.demo;
+  render();
+}
+function haptic(t){
+  try{
+    if(tg&&tg.HapticFeedback){ t==='ok'?tg.HapticFeedback.notificationOccurred('success'):t==='bad'?tg.HapticFeedback.notificationOccurred('error'):tg.HapticFeedback.impactOccurred('light'); }
+    else if(navigator.vibrate){ navigator.vibrate(t==='ok'?40:t==='bad'?[80,50,80]:10); }
+  }catch(e){}
+}
+function toast(m,ms=2200){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),ms)}
+function openLink(u){
+  if(tg&&/^https:\/\/t\.me\//.test(u)&&tg.openTelegramLink) tg.openTelegramLink(u);
+  else if(tg&&tg.openLink) tg.openLink(u); else window.open(u,'_blank');
+}
+
+function render(){
+  $('som').textContent=fmt(S.som)+" so'm"; $('gem').textContent=S.gem;
+  for(const k of ['fifty','time','show']){const b=$('b-'+k);b.querySelector('.pr').textContent='💎 '+S.costs[k];b.style.opacity=S.gem<S.costs[k]?.6:1}
+  $('friends').textContent=S.friends; $('wSom').textContent=fmt(S.som)+" so'm";
+  const ok1=S.som>=30000, ok2=S.friends>=5, ok3=S.chTotal>0&&S.chDone>=S.chTotal;
+  $('bar1').style.width=Math.min(100,S.som/300)+'%'; $('bar2').style.width=Math.min(100,S.friends/5*100)+'%';
+  $('bar3').style.width=(S.chTotal?Math.min(100,S.chDone/S.chTotal*100):0)+'%';
+  $('p1').textContent=fmt(S.som)+' / 30 000'; $('p2').textContent=S.friends+' / 5'; $('p3').textContent=S.chDone+' / '+S.chTotal;
+  $('c1').textContent=(ok1?'✅ ':'⬜ ')+"Minimal 30 000 so'm"; $('c2').textContent=(ok2?'✅ ':'⬜ ')+"Kamida 5 ta do'st";
+  $('c3').textContent=(ok3?'✅ ':'⬜ ')+S.chTotal+" ta homiy kanalga obuna";
+  $('warn').textContent=(ok1&&ok2&&ok3)?'':"⚠️ Pul chiqarish uchun: kamida 30 000 so'm, 5 ta taklif qilingan do'st va barcha homiy kanallarga obuna bo'lish kerak.";
+  $('wbtn').disabled=!(ok1&&ok2&&ok3);
+  $('link').value=refLink(); $('demoBtn').style.display=S.demo?'block':'none';
+  renderTasks();
+}
+
+function navLock(){ document.querySelector('nav').classList.toggle('locked',inGame); }
+function go(t){
+  if(inGame&&t!=='game'){ haptic('bad'); toast("Test davomida boshqa bo'limga o'tib bo'lmaydi. Avval testni tugating."); return; }
+  document.querySelectorAll('.tab').forEach(e=>e.classList.remove('on')); $('t-'+t).classList.add('on');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  paused=(t!=='game'); haptic('l');
+}
+
+/* ---------- Fan tanlash va test ---------- */
+function renderPick(){
+  const n=S.answered+1; $('tierN').textContent=n; $('tierR').textContent=rewardOf(n)+" so'm";
+  $('subs').innerHTML=MAIN.map(([k,i,nm])=>`<button class="card" onclick="startSub('${k}')"><div class="text-3xl">${i}</div><div class="font-extrabold mt-1">${nm}</div></button>`).join('');
+  $('subs2').innerHTML=EXTRA.map(([k,i,nm])=>`<button class="chip" onclick="startSub('${k}')">${i} ${nm}</button>`).join('');
+}
+function startSub(k){ inGame=true; navLock(); S.sub=k; sess={t:0,ok:0,sum:0}; $('pick').style.display='none'; $('play').style.display='block'; haptic('l'); loadQ(); }
+function showPick(){ inGame=false; navLock(); locked=true; cur=null; view('q'); $('play').style.display='none'; $('pick').style.display='block'; renderPick(); }
+async function loadQ(){
+  locked=true;
+  try{
+    const q=await api('/api/question',{subject:S.sub});
+    cur={id:q.question_id}; locked=false; left=q.time_limit; total=q.time_limit; view('q');
+    $('meta').textContent=`${NAME[q.subject]} | ${q.number}-savol (${q.level})`;
+    $('meta2').textContent=S.forced?`Reklamagacha: ${S.adEvery-(S.answered%S.adEvery)} ta savol`:'';
+    $('rw').textContent='+'+q.reward+" so'm"; $('q').textContent=q.question;
+    $('opts').innerHTML=q.options.map((o,k)=>`<button class="opt" data-k="${k}" onclick="answer(${k})"><b>${L[k]}</b><span>${esc(o)}</span></button>`).join('');
+    setTimer();
+  }catch(e){ if(e.code==='ad_required') return showAd('forced'); toast(errMsg(e)); showPick(); }
+}
+function setTimer(){
+  const p=Math.max(0,Math.min(1,left/total)), col=`hsl(${Math.round(p*95)} 100% 58%)`;   // yashil -> sariq -> qizil
+  $('qring').style.background=`conic-gradient(from 0deg,#2c2170 ${(1-p)*100}%,${col} 0)`; // tepadan soat mili bo'ylab
+  const t=Math.ceil(Math.max(left,0)); if(t!==lastT){ lastT=t; $('time').textContent=t; }
+  $('time').style.color=col;
+}
+function frame(now){                       // har kadrda (≈60 marta/soniya) yangilanadi -> to'xtamasdan silliq aylanadi
+  raf=requestAnimationFrame(frame);
+  const dt=Math.min((now-last)/1000,.25); last=now;
+  if(locked||paused||!cur||$('ad').classList.contains('on')) return;
+  const before=left; left-=dt; setTimer();
+  if(left<=3&&left>0&&Math.ceil(left)<Math.ceil(before)) haptic('l');
+  if(left<=0) answer(-1);
+}
+function loop(){ cancelAnimationFrame(raf); last=performance.now(); raf=requestAnimationFrame(frame); }
+async function answer(k){
+  if(locked||!cur) return; locked=true;
+  const btns=[...document.querySelectorAll('.opt')]; btns.forEach(b=>b.classList.remove('hint'));
+  let res;
+  try{ res=await api('/api/answer',{question_id:cur.id,choice:k}); }
+  catch(e){ toast(errMsg(e)); setTimeout(loadQ,900); return; }
+  if(res.correct){ btns[k].classList.add('ok'); haptic('ok'); floatText('+'+res.reward+" so'm",btns[k]); }
+  else{ if(k>=0) btns[k].classList.add('bad'); btns[res.correct_index].classList.add('ok'); haptic('bad'); if(k<0) toast('Vaqt tugadi!'); }
+  applyProfile(res);
+  sess.t++; if(res.correct){sess.ok++;sess.sum+=res.reward}
+  setTimeout(()=>showResult(res,k),900);    // to'g'ri/xato ranglarini ko'rsatib, keyin alohida oyna
+}
+function view(v){ $('qwrap').style.display=v==='q'?'block':'none'; $('result').style.display=v==='r'?'block':'none'; }
+function showResult(res,k){
+  $('rIcon').textContent=res.correct?'✅':k<0?'⏰':'❌';
+  $('rMsg').textContent=res.correct?`To'g'ri! +${res.reward} so'm`:k<0?'Vaqt tugadi':"Noto'g'ri javob";
+  $('rMsg').style.color=res.correct?'var(--lime)':'var(--red)';
+  $('rSub').textContent=(S.adReq&&S.forced)?"Keyingi savoldan oldin reklama ko'rsatiladi":'';
+  $('rSess').innerHTML=`Bu sessiyada: <b>${sess.ok}/${sess.t}</b> to'g'ri · <b style="color:var(--amber)">+${fmt(sess.sum)} so'm</b>`;
+  view('r'); haptic('l');
+}
+function nextStep(){ S.adReq?showAd('forced'):loadQ(); }   // majburiy reklama bo'lsa avval o'sha
+function finish(){ toast(`Natija: ${sess.ok}/${sess.t} to'g'ri, +${fmt(sess.sum)} so'm`); showPick(); }
+function floatText(t,el){
+  const r=el.getBoundingClientRect(), f=document.createElement('div');
+  f.className='float'; f.textContent=t; f.style.left=(r.left+r.width/2-30)+'px'; f.style.top=r.top+'px';
+  document.body.appendChild(f); setTimeout(()=>f.remove(),900);
+}
+
+/* ---------- Yordamchilar (narx va tekshiruv serverda) ---------- */
+async function useBoost(k){
+  if(locked||!cur) return;
+  if(S.gem<S.costs[k]){ haptic('bad'); show('need'); return; }
+  try{
+    const r=await api('/api/boost',{question_id:cur.id,boost:k});
+    const btns=[...document.querySelectorAll('.opt')];
+    if(k==='fifty') r.remove.forEach(i=>btns[i].classList.add('gone'));
+    else if(k==='time'){ left+=r.extra_seconds; total+=r.extra_seconds; setTimer(); toast('+5 soniya ⏱'); }
+    else btns[r.correct_index].classList.add('hint');
+    haptic('ok'); applyProfile(r);
+  }catch(e){ if(e.code==='not_enough_gems') show('need'); else toast(errMsg(e)); }
+}
+
+/* ---------- Reklama (15 soniya; mukofot +2 💎 serverda beriladi) ---------- */
+async function showAd(mode){
+  let a;
+  try{ a=await api('/api/ad/start',{kind:mode}); }
+  catch(e){ if(mode==='forced'&&e.code==='ad_not_required') return loadQ(); toast(errMsg(e)); return; }
+  adCur={id:a.ad_id,mode}; let t=a.seconds;
+  $('adTag').textContent=mode==='forced'?'Majburiy reklama':"Reklama ko'rib olmos ishlang";
+  const c=a.ad; $('adTitle').textContent=c?c.title:'Reklama'; $('adText').textContent=c?c.text:'';
+  const lb=$('adLink'); if(c&&c.link){lb.style.display='inline-block';lb.textContent='Batafsil';lb.onclick=()=>openLink(c.link)} else lb.style.display='none';
+  $('adClose').style.display='none'; $('adBar').style.transition='none'; $('adBar').style.width='0';
+  show('ad'); setTimeout(()=>{$('adBar').style.transition='width '+a.seconds+'s linear';$('adBar').style.width='100%'},30);
+  $('adTxt').textContent=`Yopish: ${t} soniya`; clearInterval(adTick);
+  adTick=setInterval(()=>{
+    t--; if(t>0){ $('adTxt').textContent=`Yopish: ${t} soniya`; return; }
+    clearInterval(adTick);
+    $('adTxt').textContent=mode==='reward'?'Mukofot tayyor: +2 💎':'Reklama tugadi';
+    $('adClose').textContent=mode==='reward'?'Olmosni olish':'Davom etish'; $('adClose').style.display='block'; haptic('ok');
+  },1000);
+}
+async function closeAd(){
+  try{
+    const p=await api('/api/ad/finish',{ad_id:adCur.id}); hide('ad'); applyProfile(p);
+    if(adCur.mode==='reward') toast('+2 💎'); else loadQ();
+  }catch(e){ toast(errMsg(e)); }
+}
+
+/* ---------- Vazifalar va homiy kanallar (+2 💎) ---------- */
+function renderTasks(){
+  $('tasks').innerHTML=`
+  <div class="card task"><div class="ic">📺</div><div class="flex-1"><div class="font-extrabold text-sm">Reklama ko'ring</div><div class="text-xs text-[var(--mut)]">15 soniya · +2 💎</div></div><button class="btn" onclick="showAd('reward')">Ko'rish</button></div>
+  <div class="card task"><div class="ic">👥</div><div class="flex-1"><div class="font-extrabold text-sm">Do'stni taklif qiling</div><div class="text-xs text-[var(--mut)]">Har bir do'st · +2 💎</div></div><button class="btn" onclick="go('ref')">Taklif</button></div>
+  <div class="text-xs text-[var(--mut)] font-bold mt-1">Homiy kanallar: ${S.chDone} / ${S.chTotal} (har biri +2 💎)</div>
+  ${channels.map(c=>`<div class="card task"><div class="ic">📢</div><div class="flex-1"><div class="font-extrabold text-sm">${esc(c.title)}</div><div class="text-xs text-[var(--mut)]">Obuna bo'ling · +2 💎</div></div>${c.claimed?'<span class="text-[var(--lime)] font-extrabold text-sm">✓ Bajarildi</span>':pending[c.key]?`<button class="btn" onclick="claim('${c.key}')">Tekshirish</button>`:`<button class="btn" onclick="openCh('${c.key}')">Obuna</button>`}</div>`).join('')}`;
+}
+function openCh(key){ const c=channels.find(x=>x.key===key); openLink(c.url); pending[key]=1; renderTasks(); }
+async function claim(key){
+  try{ const p=await api('/api/channels/claim',{channel:key}); channels=await api('/api/channels'); applyProfile(p); haptic('ok'); toast('+2 💎'); }
+  catch(e){ haptic('bad'); toast(errMsg(e)); }
+}
+
+/* ---------- Referal ---------- */
+function copyLink(){
+  const v=refLink();
+  (navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).catch(()=>{$('link').select();document.execCommand('copy')}).finally(()=>{toast('Havola nusxalandi ✅');haptic('ok')});
+}
+function shareLink(){ openLink(`https://t.me/share/url?url=${encodeURIComponent(refLink())}&text=${encodeURIComponent("Bilim sinab, pul ishlang! 💎")}`); }
+async function demoFriend(){
+  try{ applyProfile(await api('/api/demo/friend',{})); toast("Do'st qo'shildi: +2 💎"); haptic('ok'); }
+  catch(e){ toast(errMsg(e)); }
+}
+
+/* ---------- Hamyon ---------- */
+$('card').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim()});
+async function withdraw(){
+  const c=$('card').value.replace(/\s/g,'');
+  if(c.length<16){ haptic('bad'); toast("Karta raqamini to'liq kiriting"); return; }
+  try{ const r=await api('/api/withdraw',{card:c}); applyProfile(r); haptic('ok'); toast('✅ '+r.message,5000); }
+  catch(e){ haptic('bad'); toast(errMsg(e)); }
+}
+
+(async()=>{
+  try{ applyProfile(await api('/api/user')); channels=await api('/api/channels'); }
+  catch(e){ toast(errMsg(e)); }
+  render(); showPick(); loop();
+})();
+</script>
+</body>
+</html>
