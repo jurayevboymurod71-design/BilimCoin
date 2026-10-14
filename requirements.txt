@@ -3,3 +3,8 @@ fastapi>=0.115
 uvicorn[standard]>=0.30
 aiosqlite>=0.20
 pydantic>=2.8
+aiogram>=3.0
+fastapi
+uvicorn[standard]
+pydantic
+sqlalchemy
