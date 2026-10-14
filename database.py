@@ -3,7 +3,9 @@ from sqlalchemy import Column, Integer, String, BigInteger, Boolean, Float, crea
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 
-# SQLite ma'lumotlar bazasi fayli
+# Sozlamalar
+REFERRAL_GEMS = 100
+
 DATABASE_URL = "sqlite:///./bilimcoin.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -11,57 +13,64 @@ SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bi
 
 Base = declarative_base()
 
-# 1. Foydalanuvchilar jadvali
+# Models
 class User(Base):
     __tablename__ = "users"
-
     id = Column(Integer, primary_key=True, index=True)
     telegram_id = Column(BigInteger, unique=True, index=True)
     full_name = Column(String, nullable=True)
     balance = Column(Float, default=0.0)
+    gems = Column(Integer, default=0)
     referrer_id = Column(BigInteger, nullable=True)
     is_admin = Column(Boolean, default=False)
 
-# 2. Homiy kanallar jadvali
 class Channel(Base):
     __tablename__ = "channels"
-
     id = Column(Integer, primary_key=True, index=True)
     channel_id = Column(BigInteger, unique=True)
     title = Column(String)
     link = Column(String)
 
-# 3. Reklama va e'lonlar jadvali
+class ChannelReward(Base):
+    __tablename__ = "channel_rewards"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(BigInteger)
+    channel_id = Column(BigInteger)
+
 class Ad(Base):
     __tablename__ = "ads"
-
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String)
     description = Column(String, nullable=True)
     reward = Column(Float, default=0.0)
     link = Column(String)
 
-# 4. Yechib olish so'rovlari jadvali
+class AdView(Base):
+    __tablename__ = "ad_views"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(BigInteger)
+    ad_id = Column(Integer)
+
 class Withdrawal(Base):
     __tablename__ = "withdrawals"
-
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(BigInteger)
     amount = Column(Float)
-    status = Column(String, default="pending") # pending, approved, rejected
+    status = Column(String, default="pending")
 
-# 5. Sessiyalar / O'yinlar jadvali
-class Sessionlocal(Base):
-    __tablename__ = "sessions"
-
+class QSession(Base):
+    __tablename__ = "q_sessions"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(BigInteger)
     score = Column(Integer, default=0)
 
-# Baza jadval strukturasini yaratish
-Base.metadata.create_all(bind=engine)
+# Helper functions
+def init_db():
+    Base.metadata.create_all(bind=engine)
 
-# Yordamchi funksiyalar
+def seed_defaults():
+    pass
+
 def get_db():
     db = SessionLocal()
     try:
@@ -69,12 +78,28 @@ def get_db():
     finally:
         db.close()
 
+def get_or_create_user(db, telegram_id: int, full_name: str = None, referrer_id: int = None):
+    user = db.query(User).filter(User.telegram_id == telegram_id).first()
+    if not user:
+        user = User(telegram_id=telegram_id, full_name=full_name, referrer_id=referrer_id)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    return user
+
 def get_setting(key: str, default=None):
     return default
 
 def set_setting(key: str, value):
     pass
 
-def chat_from_url(url: str):
-    return url
-  
+def spend_gems(db, user_id: int, amount: int):
+    user = db.query(User).filter(User.telegram_id == user_id).first()
+    if user and user.gems >= amount:
+        user.gems -= amount
+        db.commit()
+        return True
+    return False
+
+# Baza yaratish
+init_db()
