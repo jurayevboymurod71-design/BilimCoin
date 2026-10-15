@@ -27,8 +27,8 @@ from sqlalchemy import func, select, update
 
 from admin import ADMIN_IDS, router as admin_router
 from database import (REFERRAL_GEMS, Ad, AdView, Channel, ChannelReward, QSession, SessionLocal, User,
-                      Withdrawal, get_or_create_user, get_setting, init_db, seed_defaults, spend_gems)
-from questions import BANK
+                      Withdrawal, get_or_create_user, get_setting, init_db, random_question, seed_defaults, spend_gems)
+from questions import BANK, SUBJECTS
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("bilimcoin")
@@ -267,13 +267,19 @@ class QuestionIn(BaseModel):
 @app.post("/api/question")
 async def api_question(body: QuestionIn, auth=Depends(auth_dep), s=Depends(db)):
     user = await ensure_user(s, auth)
-    if body.subject not in BANK:
+    if body.subject not in SUBJECTS:
         raise HTTPException(400, "unknown_subject")
     if user.ad_required:
         raise HTTPException(409, "ad_required")
     await s.execute(update(QSession).where(QSession.user_id == user.id, QSession.closed == False)  # noqa: E712
                     .values(closed=True))                      # eski ochiq savollarni yopamiz
-    text, options, right = random.choice(BANK[body.subject])
+    row = await random_question(s, body.subject)               # katta baza (DB)
+    if row:
+        text, options, right = row.text, [row.a, row.b, row.c, row.d], row.correct
+    elif BANK.get(body.subject):                               # baza bo'sh bo'lsa: kichik zaxira ro'yxat
+        text, options, right = random.choice(BANK[body.subject])
+    else:
+        raise HTTPException(404, "no_questions")
     order = list(range(4))
     random.shuffle(order)
     shuffled = [options[i] for i in order]
@@ -529,4 +535,3 @@ elif os.path.isfile("index.html"):                # variant 2: index.html repo i
     @app.get("/")
     async def index_page():
         return FileResponse("index.html")
-      
