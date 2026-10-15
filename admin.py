@@ -11,7 +11,10 @@ from aiogram.types import InlineKeyboardMarkup as KB
 from aiogram.types import Message
 from sqlalchemy import delete, func, select
 
-from database import (Ad, Channel, SessionLocal, User, Withdrawal, chat_from_url, get_setting, set_setting)
+from database import (Ad, Channel, Question, SessionLocal, User, Withdrawal, chat_from_url, get_setting,
+                      set_setting)
+from qimport import import_rows, parse_rows
+from questions import SUBJECTS
 
 ADMIN_IDS = {int(x) for x in re.split(r"[,\s]+", os.getenv("ADMIN_IDS", "8140503158")) if x.isdigit()}
 if os.getenv("ADMIN_CHAT_ID", "").isdigit():      # shaxsiy ADMIN_CHAT_ID ham admin hisoblanadi
@@ -27,7 +30,8 @@ HELP = ("🛠 Admin panel\n\n"
         "  masalan: /addch https://t.me/kanal | Kanal nomi\n"
         "  (maxfiy kanal bo'lsa 3-qismga -100... ID yozing)\n"
         "/addad <sarlavha> | <matn> | [havola]  — reklama qo'shish\n"
-        "/setads <son>  — har nechta savoldan keyin majburiy reklama\n\n"
+        "/setads <son>  — har nechta savoldan keyin majburiy reklama\n"
+        "📥 Savollar: CSV yoki JSON faylni shu botga yuboring (hisobot: ❓ Savollar tugmasi)\n\n"
         "O'chirish, yoqish/o'chirish va sozlamalar — pastdagi tugmalarda.\n"
         "Bot homiy kanallarda ADMIN bo'lishi shart.")
 
@@ -35,7 +39,8 @@ HELP = ("🛠 Admin panel\n\n"
 def menu_kb() -> KB:
     return KB(inline_keyboard=[
         [B(text="📢 Kanallar", callback_data="adm:channels"), B(text="📺 Reklamalar", callback_data="adm:ads")],
-        [B(text="⚙️ Sozlamalar", callback_data="adm:settings"), B(text="📊 Statistika", callback_data="adm:stats")]])
+        [B(text="⚙️ Sozlamalar", callback_data="adm:settings"), B(text="📊 Statistika", callback_data="adm:stats")],
+        [B(text="❓ Savollar", callback_data="adm:questions")]])
 
 
 def back_row() -> list:
@@ -98,6 +103,46 @@ async def view_stats(ev):
                                 .where(Withdrawal.status == "pending"))).scalar_one()
     await send(ev, f"📊 Foydalanuvchilar: {users}\nJami balans: {som:,} so'm\nKutilayotgan to'lovlar: {pend}"
                .replace(",", " "), KB(inline_keyboard=[back_row()]))
+
+
+async def view_questions(ev):
+    async with SessionLocal() as s:
+        rows = (await s.execute(select(Question.subject, func.count()).where(Question.active == True)  # noqa: E712
+                                .group_by(Question.subject))).all()
+    cnt = dict(rows)
+    lines = "\n".join(f"{name} ({key}): {cnt.get(key, 0)}" for key, name in SUBJECTS.items())
+    text = (f"❓ Bazadagi savollar:\n\n{lines}\n\nJami: {sum(cnt.values())}\n\n"
+            "Qo'shish: CSV yoki JSON faylni shu botga yuboring.\n"
+            "CSV ustunlari: subject,question,a,b,c,d,correct (correct: A-D yoki 1-4).\n"
+            "Fan kalitlari: " + ", ".join(SUBJECTS) + "\n"
+            "Bazasi bo'sh fanlar uchun kichik standart savollar ishlatiladi.")
+    await send(ev, text, KB(inline_keyboard=[back_row()]))
+
+
+@router.message(F.document)
+async def import_file(m: Message):
+    doc = m.document
+    name = (doc.file_name or "").lower()
+    if not name.endswith((".csv", ".json", ".txt")):
+        await m.answer("Faqat .csv yoki .json fayl yuboring.")
+        return
+    if doc.file_size and doc.file_size > 20 * 1024 * 1024:
+        await m.answer("Fayl 20 MB dan katta (Telegram cheklovi). Bir nechta faylga bo'lib yuboring.")
+        return
+    await m.answer("⏳ Yuklanmoqda...")
+    try:
+        data = (await m.bot.download(doc)).read()
+        rows = parse_rows(data, name)
+    except ValueError as e:
+        await m.answer(f"❌ {e}")
+        return
+    async with SessionLocal() as s:
+        res = await import_rows(s, rows)
+    msg = (f"✅ Qo'shildi: {res['added']}\nTakroriy/o'tkazilgan: {res['skipped']}\n"
+           f"Xato qatorlar: {res['errors']}\nJami qator: {res['total']}")
+    if res["samples"]:
+        msg += "\n\nXato namunalari:\n" + "\n".join(res["samples"])
+    await m.answer(msg)
 
 
 @router.message(Command("admin"))
@@ -179,6 +224,6 @@ async def adm_cb(cb: CallbackQuery):
             else:
                 await set_setting(s, "reward_ads_daily", val)
         return await view_settings(cb)
-    views = {"menu": None, "channels": view_channels, "ads": view_ads, "settings": view_settings, "stats": view_stats}
+    views = {"menu": None, "channels": view_channels, "ads": view_ads, "settings": view_settings, "stats": view_stats, "questions": view_questions}
     fn = views.get(act)
     await (fn(cb) if fn else send(cb, HELP, menu_kb()))
