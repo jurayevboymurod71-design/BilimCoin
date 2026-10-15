@@ -19,8 +19,8 @@ from aiogram.filters import CommandObject, CommandStart
 from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup,
                            Message, Update, WebAppInfo)
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, update
@@ -51,7 +51,7 @@ MAX_REWARD_ADS_PER_DAY = 30
 MAX_BOOST_COST = 1_000_000
 # Pul chiqarish so'rovlari shu chatga boradi (shaxsiy ID yoki guruh ID, masalan -1001234567890).
 # Berilmasa, hamma ADMIN_IDS ga yuboriladi.
-ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0") or 0) or None
+ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "8140503158") or 0) or None
 NOTIFY_CHATS = [ADMIN_CHAT_ID] if ADMIN_CHAT_ID else sorted(ADMIN_IDS)
 DEMO_MODE = os.getenv("DEMO_MODE") == "1"   # 1 bo'lsa, hamma uchun demo-do'st tugmasi ishlaydi (faqat sinov!)
 
@@ -523,7 +523,10 @@ async def demo_friend(auth=Depends(auth_dep), s=Depends(db)):
 
 
 # Frontend (static/index.html) ni shu serverning o'zidan beramiz. ALOHIDA marshrutlardan KEYIN ulanadi.
-@app.get("/")
-async def serve_index():
-    return FileResponse("index.html")
-  
+if os.path.isdir("static"):                       # variant 1: static/index.html
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")
+elif os.path.isfile("index.html"):                # variant 2: index.html repo ildizida (main.py yonida)
+    @app.get("/")
+    async def index_page():
+        return FileResponse("index.html")
+      
