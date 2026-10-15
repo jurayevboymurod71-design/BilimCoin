@@ -1,6 +1,7 @@
 """BilimCoin: ma'lumotlar bazasi (SQLAlchemy 2.0 async).
 Lokal: SQLite (aiosqlite). Serverda: PostgreSQL (asyncpg) - DATABASE_URL orqali."""
 import os
+import random
 import re
 import time
 from typing import AsyncIterator
@@ -137,6 +138,21 @@ class Setting(Base):
     value: Mapped[str] = mapped_column(String(256))
 
 
+class Question(Base):
+    """Savollar bazasi (katta hajm uchun). To'g'ri javob faqat serverda qoladi."""
+    __tablename__ = "questions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    subject: Mapped[str] = mapped_column(String(32), index=True)    # math, hist, ona, rus, eng, adab, ...
+    text: Mapped[str] = mapped_column(String(500))
+    a: Mapped[str] = mapped_column(String(200))
+    b: Mapped[str] = mapped_column(String(200))
+    c: Mapped[str] = mapped_column(String(200))
+    d: Mapped[str] = mapped_column(String(200))
+    correct: Mapped[int] = mapped_column(Integer)                    # 0=A, 1=B, 2=C, 3=D
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    hash: Mapped[str] = mapped_column(String(40), unique=True)       # takroriy savollarni oldini oladi
+
+
 # ---------------- Funksiyalar ----------------
 async def init_db() -> None:
     """Jadvallarni yaratadi (mavjud bo'lsa tegmaydi)."""
@@ -212,4 +228,13 @@ async def spend_gems(s: AsyncSession, uid: int, cost: int) -> bool:
     Commit chaqiruvchi tomonidan qilinadi."""
     r = await s.execute(update(User).where(User.id == uid, User.gem >= cost).values(gem=User.gem - cost))
     return r.rowcount == 1
-    
+
+
+async def random_question(s: AsyncSession, subject: str) -> Question | None:
+    """Fan bo'yicha tasodifiy savol (OFFSET usuli: yuz minglab qatorda ham tez). Bo'sh bo'lsa None."""
+    cond = (Question.subject == subject, Question.active == True)  # noqa: E712
+    n = (await s.execute(select(func.count()).select_from(Question).where(*cond))).scalar_one()
+    if not n:
+        return None
+    return (await s.execute(select(Question).where(*cond).order_by(Question.id)
+                            .offset(random.randrange(n)).limit(1))).scalar_one()
